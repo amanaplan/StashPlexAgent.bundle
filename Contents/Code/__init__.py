@@ -1,6 +1,7 @@
 import os, urllib, urllib2, json
 import dateutil.parser as dateparser
 import copy
+import requests
 
 # preferences
 preference = Prefs
@@ -20,22 +21,23 @@ def Start():
     ValidatePrefs()
 
 def HttpReq(url, authenticate=True, retry=True):
+    request_params = []
     if DEBUG:
         Log("Requesting: %s" % url)
-    api_string = ''
+    request_params['query'] = url
     if Prefs['APIKey']:
-        api_string = '&apikey=%s' % Prefs['APIKey']
+        request_params["apikey"] = Prefs['APIKey']
 
     if Prefs['UseHTTPS']:
-        connectstring = 'https://%s:%s/graphql?query=%s%s'
+        connectstring = 'https://%s:%s/graphql'
     else:
-        connectstring = 'http://%s:%s/graphql?query=%s%s'
+        connectstring = 'http://%s:%s/graphql'
     try:
-        connecttoken = connectstring % (Prefs['Hostname'].strip(), Prefs['Port'].strip(), url, api_string)
+        connecttoken = connectstring % (Prefs['Hostname'].strip(), Prefs['Port'].strip())
         if DEBUG:
             Log(connecttoken)
-        return JSON.ObjectFromString(
-            HTTP.Request(connecttoken).content)
+        r = requests.get(connecttoken, params=request_params)
+        return r.json()
     except Exception as e:
         if not retry:
             raise e
